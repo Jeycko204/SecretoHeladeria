@@ -84,8 +84,8 @@
                     </li>
                     <li class="d-flex align-items-center">
                         <span class="badge rounded-pill px-3 py-2"
-                            style="background-color: #5d4037; color: #fce4ec; font-size: 1rem; font-weight: bold; margin-right: 1rem;">{{
-                            user.username }}</span>
+                            style="background-color: #5d4037; color: #fce4ec; font-size: 1rem; font-weight: bold; margin-right: 1rem;">
+                            {{ user.first_name|default:user.username|title }}</span>
                         <form action="{% url 'logout' %}" method="post" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger"
