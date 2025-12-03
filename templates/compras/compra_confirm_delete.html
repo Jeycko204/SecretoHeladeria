@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirmar eliminación - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>Eliminar Compra</h2>
+    <p>Estás a punto de eliminar la compra con factura: <strong>{{ compra.numero_factura }}</strong></p>
+    <p>¿Deseas continuar?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Sí, eliminar</button>
+    <a href="{% url 'compras:compras_list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

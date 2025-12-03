@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar sesión - Secreto Heladería{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background-color: #fce4ec;
+    /* Pink background */
+  }
+
+  .login-container {
+    max-width: 400px;
+    margin: 5rem auto;
+    padding: 2rem;
+    background-color: #8d6e63;
+    /* Brown background */
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    color: white;
+  }
+
+  .login-container h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-control {
+    background-color: #fce4ec;
+    border: 1px solid #8d6e63;
+  }
+
+  .form-control:focus {
+    border-color: #5d4037;
+    box-shadow: 0 0 0 0.2rem rgba(93, 64, 55, 0.25);
+  }
+
+  .btn-primary {
+    background-color: #5d4037;
+    /* Darker brown */
+    border: none;
+  }
+
+  .btn-primary:hover,
+  .btn-primary:focus {
+    background-color: #4e342e;
+    /* Even darker brown */
+    box-shadow: 0 0 0 0.2rem rgba(93, 64, 55, 0.5);
+  }
+</style>
+
+<div class="login-container">
+  <h2>Iniciar sesión de Usuario</h2>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+      {% for error in form.non_field_errors %}
+      {{ error }}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label for="id_username" class="form-label">RUT o email</label>
+      <input type="text" name="username" class="form-control" id="id_username" placeholder="RUT o email" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="id_password" class="form-label">Contraseña</label>
+      <input type="password" name="password" class="form-control" id="id_password" required>
+    </div>
+
+    <div class="d-grid mb-3">
+      <button type="submit" class="btn btn-primary">Entrar</button>
+    </div>
+  </form>
+  <div class="d-grid">
+    <a href="{% url 'register' %}" class="btn btn-outline-light"
+      style="background-color: #fce4ec; color: #5d4037; border: 2px solid #5d4037; font-weight: bold;">Ir al registro de
+      usuario</a>
+  </div>
+  <div class="text-center mt-3">
+    <a href="{% url 'admin_login' %}">Admin Login</a>
+  </div>
+</div>
+{% endblock %}

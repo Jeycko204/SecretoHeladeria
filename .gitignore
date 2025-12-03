@@ -1,0 +1,65 @@
+# Python
+*.py[cod]
+*$py.class
+__pycache__/
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Backup files
+*.backup
+*.backup_*
+*.bak
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Debug and test files
+debug_*.py
+debug_*.txt
+*_output.txt
+migration_log*.txt
+populate_test_data.py
+tests_*.py

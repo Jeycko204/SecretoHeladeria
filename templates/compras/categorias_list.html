@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Categorías - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2>Categorías de Proveedores</h2>
+    <a href="{% url 'compras:categoria_create' %}" class="btn btn-success">+ Nueva Categoría</a>
+    </div>
+
+    {% if categorias %}
+    <div class="card">
+        <div class="card-header">Categorías de Proveedores Registradas</div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for categoria in categorias %}
+                    <tr>
+                        <td>{{ categoria.nombre }}</td>
+                        <td>
+
+                            <a href="{% url 'compras:categoria_edit' pk=categoria.pk %}" class="btn btn-primary btn-sm">Editar</a>
+                            <a href="{% url 'compras:categoria_delete' pk=categoria.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <h4>No hay categorías registradas</h4>
+        <p>Comienza creando tu primera categoría para organizar a los proveedores.</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 2rem;">
+    <a href="{% url 'compras:compras' %}" class="btn btn-secondary">← Volver al Panel</a>
+    </div>
+</div>
+{% endblock %}

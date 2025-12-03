@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Proveedores - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2>Lista de Proveedores</h2>
+        <div>
+            <a href="{% url 'compras:proveedor_create' %}" class="btn btn-success">+ Nuevo Proveedor</a>
+            <a href="{% url 'compras:export_proveedores_excel' %}" class="btn btn-success">Exportar Excel</a>
+            <a href="{% url 'compras:export_proveedores_pdf' %}" class="btn btn-danger">Exportar PDF</a>
+        </div>
+    </div>
+
+    {% if proveedores %}
+    <div class="card">
+        <div class="card-header">Proveedores Registrados</div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Categoría</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proveedor in proveedores %}
+                    <tr>
+                        <td>{{ proveedor.nombre }}</td>
+                        <td>{{ proveedor.contacto|default:"-" }}</td>
+                        <td>{{ proveedor.telefono|default:"-" }}</td>
+                        <td>{{ proveedor.categoria.nombre|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'compras:proveedor_edit' proveedor.pk %}"
+                                class="btn btn-sm btn-primary">Editar</a>
+                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                data-bs-target="#evaluarModal{{ proveedor.pk }}">
+                                Evaluar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-info" onclick="loadHistory({{ proveedor.pk }})">
+                                Historial
+                            </button>
+                            <form action="{% url 'compras:proveedor_delete' proveedor.pk %}" method="post"
+                                style="display:inline;"
+                                onsubmit="return confirm('¿Eliminar proveedor {{ proveedor.nombre }}? Esta acción no se puede deshacer.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                            </form>
+
+                            <!-- Modal Evaluar -->
+                            <div class="modal fade" id="evaluarModal{{ proveedor.pk }}" tabindex="-1"
+                                aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Evaluar a {{ proveedor.nombre }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <form action="{% url 'compras:proveedor_evaluar' proveedor.pk %}" method="post">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Calidad</label>
+                                                    <select name="calidad" class="form-control">
+                                                        <option value="EXCELENTE">Excelente</option>
+                                                        <option value="BUENO">Bueno</option>
+                                                        <option value="MEDIO">Medio</option>
+                                                        <option value="MALO">Malo</option>
+                                                        <option value="MUY_MALO">Muy malo</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Descripción Breve</label>
+                                                    <textarea name="descripcion" class="form-control" rows="3"
+                                                        placeholder="Breve descripcion..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Cerrar</button>
+                                                <button type="submit" class="btn btn-primary">Guardar
+                                                    Evaluación</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <h4>No hay proveedores registrados</h4>
+        <p>Comienza creando tu primer proveedor.</p>
+        <div class="d-flex justify-content-between mb-3">
+            <div>
+                <a href="{% url 'compras:proveedor_create' %}" class="btn btn-primary">Crear Proveedor</a>
+                <a href="{% url 'compras:export_proveedores_excel' %}" class="btn btn-success">Exportar Excel</a>
+                <a href="{% url 'compras:export_proveedores_pdf' %}" class="btn btn-danger">Exportar PDF</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'compras:compras' %}" class="btn btn-secondary">← Volver al Panel</a>
+    </div>
+</div>
+
+<!-- Modal Historial (Generic) -->
+<div class="modal fade" id="historialModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historialTitle">Historial de Evaluaciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Calidad</th>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historialBody">
+                        <!-- Content loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function loadHistory(proveedorId) {
+        const modal = new bootstrap.Modal(document.getElementById('historialModal'));
+        const tbody = document.getElementById('historialBody');
+        const title = document.getElementById('historialTitle');
+
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
+        modal.show();
+
+        fetch(`/compras/proveedores/${proveedorId}/historial/`)
+            .then(response => response.json())
+            .then(data => {
+                title.textContent = `Historial de Evaluaciones - ${data.proveedor}`;
+                tbody.innerHTML = '';
+                if (data.evaluaciones.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay evaluaciones registradas.</td></tr>';
+                    return;
+                }
+                data.evaluaciones.forEach(ev => {
+                    const row = `
+                    <tr>
+                        <td>${ev.usuario}</td>
+                        <td>${ev.calidad}</td>
+                        <td>${ev.fecha}</td>
+                        <td>${ev.descripcion}</td>
+                    </tr>
+                `;
+                    tbody.innerHTML += row;
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar historial.</td></tr>';
+            });
+    }
+</script>
+{% endblock %}

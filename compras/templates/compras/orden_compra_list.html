@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Ordenes de Compra</h2>
+
+    <div class="d-flex justify-content-between mb-3">
+        <div>
+            {% if perms.can_create_oc %}
+            <a href="{% url 'compras:orden_compra_create' %}" class="btn btn-outline-secondary">Registrar OC</a>
+            {% endif %}
+        </div>
+        <div>
+            <a href="{% url 'compras:export_ordenes_excel' %}" class="btn btn-success">Exportar Excel</a>
+            <a href="{% url 'compras:export_ordenes_pdf' %}" class="btn btn-danger">Exportar PDF</a>
+        </div>
+    </div>
+
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Buscar por ID o Proveedor"
+                value="{{ request.GET.q }}">
+            <button class="btn btn-outline-secondary" type="submit">Buscar</button>
+        </div>
+    </form>
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Id-orden</th>
+                <th>Monto total</th>
+                <th>Fecha de emision</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for orden in ordenes %}
+            <tr>
+                <td>OC-{{ orden.id }}</td>
+                <td>{{ orden.monto_total }}</td>
+                <td>{{ orden.fecha_emision|date:"d/m/Y" }}</td>
+                <td>{{ orden.get_estado_display }}</td>
+                <td>
+                    <a href="{% url 'compras:orden_compra_detail' orden.id %}" class="btn btn-sm btn-link">[Ver]</a>
+                    {% if orden.estado == 'EN_ESPERA' %}
+                    {% if perms.can_anular_oc %}
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                        data-bs-target="#anularModal{{ orden.id }}">
+                        [Anular]
+                    </button>
+                    {% endif %}
+                    {% if perms.can_approve_oc %}
+                    <form action="{% url 'compras:orden_compra_aprobar' orden.id %}" method="post"
+                        style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-success">[Aprobar]</button>
+                    </form>
+                    {% endif %}
+                    {% if perms.can_reject_oc %}
+                    <form action="{% url 'compras:orden_compra_rechazar' orden.id %}" method="post"
+                        style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">[Rechazar]</button>
+                    </form>
+                    {% endif %}
+                    {% elif orden.estado == 'APROBADA' %}
+                    {% if perms.can_close_oc %}
+                    <form action="{% url 'compras:orden_compra_cerrar' orden.id %}" method="post"
+                        style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-primary">[Cerrar]</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                    {% if orden.estado != 'EN_ESPERA' and orden.estado != 'RECHAZADO' and orden.estado != 'CERRADA' %}
+                    {% if perms.can_edit_oc %}
+                    <a href="{% url 'compras:orden_compra_edit' orden.id %}" class="btn btn-sm btn-link">[Editar]</a>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- Modal Anular -->
+                    <div class="modal fade" id="anularModal{{ orden.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Anular Orden OC-{{ orden.id }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <form action="{% url 'compras:orden_compra_anular' orden.id %}" method="post">
+                                    {% csrf_token %}
+                                    <div class="modal-body">
+                                        <p>¿Está seguro de que desea anular esta orden?</p>
+                                        <p>Puede optar por clonar los datos en una nueva orden para corregirlos.</p>
+
+                                        <div class="mb-3">
+                                            <label for="motivo_anulacion_{{ orden.id }}" class="form-label">Motivo de
+                                                anulación *</label>
+                                            <textarea name="motivo_anulacion" id="motivo_anulacion_{{ orden.id }}"
+                                                class="form-control" rows="3"
+                                                placeholder="Ej: Error de tipeo, cambio de proveedor, etc."
+                                                required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" name="clonar" value="false" class="btn btn-danger">Solo
+                                            Anular</button>
+                                        <button type="submit" name="clonar" value="true" class="btn btn-primary">Anular
+                                            y Clonar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No hay ordenes registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Paginación -->
+    {% if ordenes.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if ordenes.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}">Primera</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ ordenes.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Anterior</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ ordenes.number }} de {{ ordenes.paginator.num_pages }}</span>
+            </li>
+
+            {% if ordenes.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ ordenes.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Siguiente</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ ordenes.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Última</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <div class="d-flex justify-content-center mt-3">
+        <a href="{% url 'compras:compras' %}" class="btn btn-outline-secondary">Volver</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notificaciones{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>Notificaciones</h2>
+
+    {% if notifications %}
+    <div class="list-group">
+        {% for notification in notifications %}
+        <a href="{% url 'compras:orden_compra_detail' notification.orden_compra.id %}"
+            class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}"
+            onclick="markAsRead({{ notification.id }})">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{ notification.get_notification_type_display }}</h6>
+                <small>{{ notification.created_at|timesince }} ago</small>
+            </div>
+            <p class="mb-1">{{ notification.message }}</p>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No tienes notificaciones.</p>
+    {% endif %}
+</div>
+
+<script>
+    function markAsRead(notificationId) {
+        fetch(`/compras/notifications/${notificationId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Categoría - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Detalle de Categoría</h2>
+
+    <div class="card">
+        <div class="card-header">
+            Categoría: {{ categoria.nombre }}
+        </div>
+        <div class="card-body">
+            <p><strong>Nombre:</strong> {{ categoria.nombre }}</p>
+            <p><strong>Descripción:</strong> {{ categoria.descripcion|default:"N/A" }}</p>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'compras:categorias_list' %}" class="btn btn-secondary">Volver al Listado</a>
+            <a href="{% url 'compras:categoria_edit' pk=categoria.pk %}" class="btn btn-primary">Editar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
