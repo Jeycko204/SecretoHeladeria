@@ -5,3 +5,7 @@ PyMySQL
 sqlparse==0.5.3
 openpyxl
 reportlab
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+requests

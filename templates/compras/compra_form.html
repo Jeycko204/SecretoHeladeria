@@ -13,32 +13,57 @@
             <div class="form-group mb-3">
                 <label for="{{ form.proveedor.id_for_label }}">Proveedor</label>
                 {{ form.proveedor }}
-                <div class="mt-1" style="color: black; font-weight: bold;"><small>Debe seleccionar un proveedor</small>
+                {% if form.proveedor.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.proveedor.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
                 </div>
+                {% endif %}
             </div>
             <div class="form-group mb-3">
                 <label for="{{ form.numero_factura.id_for_label }}">Número de Factura</label>
                 {{ form.numero_factura }}
-                <div class="mt-1" style="color: black; font-weight: bold;"><small>El número de factura es
-                        obligatorio</small></div>
+                {% if form.numero_factura.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.numero_factura.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <div class="form-group mb-3">
                 <label for="{{ form.fecha_compra.id_for_label }}">Fecha de Compra</label>
                 {{ form.fecha_compra }}
-                <div class="mt-1" style="color: black; font-weight: bold;"><small>La fecha es obligatoria y debe ser
-                        hoy</small></div>
+                {% if form.fecha_compra.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.fecha_compra.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             <div class="form-group mb-3">
                 <label for="{{ form.monto_total.id_for_label }}">Monto Total</label>
                 {{ form.monto_total }}
-                <div class="mt-1" style="color: black; font-weight: bold;"><small>El monto total es obligatorio</small>
+                {% if form.monto_total.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.monto_total.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
                 </div>
+                {% endif %}
             </div>
             <div class="form-group mb-3">
                 <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
                 {{ form.descripcion }}
-                <div class="mt-1" style="color: black; font-weight: bold;"><small>La descripción es obligatoria</small>
+                {% if form.descripcion.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.descripcion.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
                 </div>
+                {% endif %}
             </div>
         </div>
 

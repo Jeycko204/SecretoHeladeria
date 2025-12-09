@@ -22,6 +22,10 @@ def department_required(*departments):
                 messages.error(request, 'Debes iniciar sesión')
                 return redirect('login')
             
+            # Allow superusers to bypass department check
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            
             # Get user department
             user_dept = None
             if hasattr(request.user, 'profile'):
@@ -30,7 +34,7 @@ def department_required(*departments):
             # Check if user has required department
             if user_dept not in departments:
                 messages.error(request, 'No tienes permiso para realizar esta acción')
-                return redirect('compras:ordenes_list')
+                return redirect('compras:orden_compra_list')
             
             return view_func(request, *args, **kwargs)
         return wrapper

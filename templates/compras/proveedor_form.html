@@ -39,6 +39,13 @@
                         {% if field.errors %}<span style="color: red; font-weight: bold;"> *</span>{% endif %}
                     </label>
                     {{ field }}
+                    {% if field.errors %}
+                    <div class="mt-1" style="color: red; font-weight: bold;">
+                        {% for error in field.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     {% if field.help_text %}
                     <small class="form-text text-muted">{{ field.help_text }}</small>
                     {% endif %}
