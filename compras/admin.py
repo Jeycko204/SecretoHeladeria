@@ -16,3 +16,26 @@ class CompraAdmin(admin.ModelAdmin):
     list_display = ("numero_factura", "proveedor", "fecha_compra", "monto_total")
     search_fields = ("numero_factura", "proveedor__nombre")
     list_filter = ("proveedor", "fecha_compra")
+
+from .models import Insumo, OrdenCompra, DetalleOrden, UserProfile
+
+@admin.register(Insumo)
+class InsumoAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "categoria", "unidad_medida")
+    list_filter = ("categoria",)
+
+class DetalleOrdenInline(admin.TabularInline):
+    model = DetalleOrden
+    extra = 0
+
+@admin.register(OrdenCompra)
+class OrdenCompraAdmin(admin.ModelAdmin):
+    list_display = ("id", "solicitante", "estado", "monto_total", "fecha_emision")
+    list_filter = ("estado", "fecha_emision")
+    inlines = [DetalleOrdenInline]
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "department")
+    list_filter = ("department",)
+

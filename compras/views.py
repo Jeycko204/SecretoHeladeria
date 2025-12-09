@@ -150,31 +150,35 @@ def proveedor_create(request):
             proveedor = form.save()
             
             # Process insumos_data
-            insumos_data = request.POST.getlist('insumos_data')
-            if insumos_data:
-                # Parse the data structure: insumos_data[0][categoria], insumos_data[0][nombre], etc.
-                insumos_dict = {}
-                for key in request.POST:
-                    if key.startswith('insumos_data['):
-                        # Extract index and field name
-                        parts = key.replace('insumos_data[', '').replace(']', '.').split('.')
-                        if len(parts) >= 2:
-                            index = parts[0]
-                            field = parts[1]
+            # Process insumos_data
+            # Parse the data structure: insumos_data[0][categoria], insumos_data[0][nombre], etc.
+            insumos_dict = {}
+            for key in request.POST:
+                if key.startswith('insumos_data['):
+                    # Extract index and field name
+                    # key format: insumos_data[0][categoria]
+                    try:
+                        # Remove 'insumos_data[' prefix (len 13) and last ']'
+                        content = key[13:-1] # 0][categoria
+                        if '][' in content:
+                            index, field = content.split('][')
+                            
                             if index not in insumos_dict:
                                 insumos_dict[index] = {}
                             insumos_dict[index][field] = request.POST[key]
-                
-                # Create Insumo objects
-                for insumo_data in insumos_dict.values():
-                    if 'categoria' in insumo_data and 'nombre' in insumo_data and 'unidad_medida' in insumo_data:
-                        # Check if insumo already exists
-                        insumo, created = Insumo.objects.get_or_create(
-                            nombre=insumo_data['nombre'],
-                            categoria_id=insumo_data['categoria'],
-                            defaults={'unidad_medida': insumo_data['unidad_medida']}
-                        )
-                        proveedor.insumos.add(insumo)
+                    except ValueError:
+                        continue
+            
+            # Create Insumo objects
+            for insumo_data in insumos_dict.values():
+                if 'categoria' in insumo_data and 'nombre' in insumo_data and 'unidad_medida' in insumo_data:
+                    # Check if insumo already exists
+                    insumo, created = Insumo.objects.get_or_create(
+                        nombre=insumo_data['nombre'],
+                        categoria_id=insumo_data['categoria'],
+                        defaults={'unidad_medida': insumo_data['unidad_medida']}
+                    )
+                    proveedor.insumos.add(insumo)
             
             messages.success(request, 'Proveedor creado exitosamente.')
             return redirect('compras:proveedores_list')
@@ -383,13 +387,19 @@ def proveedor_edit(request, pk):
             insumos_dict = {}
             for key in request.POST:
                 if key.startswith('insumos_data['):
-                    parts = key.replace('insumos_data[', '').replace(']', '.').split('.')
-                    if len(parts) >= 2:
-                        index = parts[0]
-                        field = parts[1]
-                        if index not in insumos_dict:
-                            insumos_dict[index] = {}
-                        insumos_dict[index][field] = request.POST[key]
+                    # Extract index and field name
+                    # key format: insumos_data[0][categoria]
+                    try:
+                        # Remove 'insumos_data[' prefix (len 13) and last ']'
+                        content = key[13:-1] # 0][categoria
+                        if '][' in content:
+                            index, field = content.split('][')
+                            
+                            if index not in insumos_dict:
+                                insumos_dict[index] = {}
+                            insumos_dict[index][field] = request.POST[key]
+                    except ValueError:
+                        continue
             
             for insumo_data in insumos_dict.values():
                 if 'categoria' in insumo_data and 'nombre' in insumo_data and 'unidad_medida' in insumo_data:
@@ -503,7 +513,7 @@ def orden_compra_create(request):
                 with transaction.atomic():
                     orden = form.save(commit=False)
                     orden.solicitante = request.user
-                    orden.estado = 'PENDIENTE'
+                    orden.estado = 'EN_ESPERA'
                     
                     detalles = formset.save(commit=False)
                     
@@ -559,16 +569,9 @@ def orden_compra_edit(request, pk):
             messages.success(request, 'Orden anulada correctamente.')
         return redirect('compras:orden_compra_detail', pk=orden.pk)
 
-    # Prevent editing if not EN_ESPERA (though user said "no editable" if EN_ESPERA, 
-    # but usually you edit DRAFT. If EN_ESPERA is locked, then we shouldn't be here unless it's to view/anular)
-    # The requirement says: "en espera solo puede ser anulada, no editable".
-    # So we should probably redirect or show error if trying to save changes.
-    # But we need this view to handle the POST for "Anular" if we put the button in the form? 
-    # Actually, "Anular" is better placed in Detail view.
-    # If this view is strictly for editing content, we should block it if EN_ESPERA.
-    
-    if orden.estado == 'EN_ESPERA':
-         messages.warning(request, 'Las órdenes en espera no se pueden editar, solo anular.')
+    # Prevent editing if NOT EN_ESPERA (Approved/Rejected/Closed orders are immutable)
+    if orden.estado != 'EN_ESPERA':
+         messages.warning(request, 'Solo se pueden editar órdenes en estado "En Espera".')
          return redirect('compras:orden_compra_detail', pk=orden.pk)
 
     if request.method == 'POST':
@@ -819,6 +822,21 @@ def orden_compra_aprobar(request, pk):
         if orden.estado != 'EN_ESPERA':
             messages.error(request, 'Solo se pueden aprobar órdenes en espera.')
             return redirect('compras:orden_compra_detail', pk=orden.pk)
+            
+        # Concurrency Check
+        last_updated = request.POST.get('last_updated')
+        if last_updated:
+            try:
+                current_ts = orden.updated_at.timestamp()
+                posted_ts = float(last_updated)
+                # Allow 1 second tolerance for clock skew or rounding
+                if abs(current_ts - posted_ts) > 2.0:
+                    messages.error(request, 'La orden ha sido modificada por otro usuario mientras usted la revisaba. Por favor, revise los cambios antes de aprobar.')
+                    return redirect('compras:orden_compra_detail', pk=orden.pk)
+            except (ValueError, TypeError):
+                # If timestamp is invalid, ignore or warn? 
+                # Safer to warn if we expect it.
+                pass
         
         orden.estado = 'APROBADA'
         orden.save()
@@ -926,14 +944,16 @@ def api_get_insumos(request):
 @admin_required
 def api_get_proveedores(request):
     categoria_id = request.GET.get('categoria_id')
+    print(f"API Get Proveedores - Cat ID: {categoria_id}") # Debug log
     
     if categoria_id:
         # Filter providers who have at least one insumo in this category
-        proveedores = Proveedor.objects.filter(insumos__categoria_id=categoria_id).distinct()
+        proveedores = Proveedor.objects.filter(insumos__categoria_id=categoria_id).distinct().order_by('nombre')
     else:
-        proveedores = Proveedor.objects.all()
+        proveedores = Proveedor.objects.all().order_by('nombre')
         
     data = [{'id': p.id, 'nombre': p.nombre} for p in proveedores]
+    print(f"Found {len(data)} providers") # Debug log
     return JsonResponse({'proveedores': data})
 
 

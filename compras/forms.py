@@ -90,6 +90,13 @@ class ProveedorForm(forms.ModelForm):
             validate_rut(rut_clean)
         except ValidationError as e:
             raise ValidationError(e.message)
+            
+        # Check uniqueness
+        qs = Proveedor.objects.filter(rut=rut_clean)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe un proveedor registrado con este RUT.')
         
         return rut_clean
     
@@ -126,6 +133,13 @@ class ProveedorForm(forms.ModelForm):
         # Check minimum length
         if len(nombre.strip()) < 3:
             raise ValidationError('El nombre debe tener al menos 3 caracteres')
+            
+        # Check uniqueness
+        qs = Proveedor.objects.filter(nombre__iexact=nombre.strip())
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe un proveedor con este nombre.')
         
         return nombre.strip()
     
@@ -152,6 +166,13 @@ class ProveedorForm(forms.ModelForm):
         # Basic email format validation
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             raise ValidationError('Ingrese un email válido (ej: contacto@empresa.cl)')
+            
+        # Check uniqueness
+        qs = Proveedor.objects.filter(email__iexact=email.strip())
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe un proveedor registrado con este email.')
         
         return email.lower().strip()
     
@@ -236,6 +257,13 @@ class CategoriaForm(forms.ModelForm):
         # Check if nombre contains numbers
         if re.search(r'\d', nombre):
             raise ValidationError('El campo nombre no debe contener números')
+            
+        # Check uniqueness
+        qs = Categoria.objects.filter(nombre__iexact=nombre)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe una categoría con este nombre.')
         
         return nombre
 
@@ -258,6 +286,17 @@ class CompraForm(forms.ModelForm):
         if fecha and fecha != date.today():
             raise forms.ValidationError('La fecha de la compra debe ser la fecha actual.')
         return fecha
+
+    def clean_numero_factura(self):
+        numero = self.cleaned_data.get('numero_factura')
+        if numero:
+            # Check uniqueness
+            qs = Compra.objects.filter(numero_factura=numero)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError('Ya existe una compra registrada con este número de factura.')
+        return numero
 
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
@@ -376,6 +415,18 @@ class DetalleOrdenForm(forms.ModelForm):
             raise ValidationError(errors)
         
         return precio
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        proveedor = cleaned_data.get('proveedor')
+        insumo_fk = cleaned_data.get('insumo_fk')
+        
+        if proveedor and insumo_fk:
+            # Check if the provider actually sells this insumo
+            if not proveedor.insumos.filter(pk=insumo_fk.pk).exists():
+                raise ValidationError(f"El proveedor {proveedor.nombre} no vende el insumo {insumo_fk.nombre}.")
+                
+        return cleaned_data
 
 DetalleOrdenFormSet = inlineformset_factory(
     OrdenCompra, DetalleOrden, form=DetalleOrdenForm,
@@ -390,3 +441,10 @@ class EvaluacionProveedorForm(forms.ModelForm):
             'calidad': forms.Select(attrs={'class': 'form-control'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Breve descripcion...'}),
         }
+        
+    def clean_descripcion(self):
+        descripcion = self.cleaned_data.get('descripcion')
+        if descripcion:
+            if len(descripcion.strip()) < 10:
+                raise ValidationError('La descripción debe tener al menos 10 caracteres para ser útil.')
+        return descripcion

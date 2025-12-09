@@ -3,9 +3,19 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.db import transaction
-from .models import Proveedor, OrdenCompra, DetalleOrden
-from .serializers import ProveedorSerializer, OrdenCompraSerializer
+from .models import Proveedor, OrdenCompra, DetalleOrden, Categoria, Insumo
+from .serializers import ProveedorSerializer, OrdenCompraSerializer, CategoriaSerializer, InsumoSerializer
 from .permissions import IsJefeComprasOrReadOnly, IsBodeguero, IsFinanzas
+
+class CategoriaViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaSerializer
+    permission_classes = [IsAuthenticated]
+
+class InsumoViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Insumo.objects.all()
+    serializer_class = InsumoSerializer
+    permission_classes = [IsAuthenticated]
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()

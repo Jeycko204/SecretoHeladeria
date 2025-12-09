@@ -98,6 +98,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
                     <form method="post" action="{% url 'compras:orden_compra_aprobar' orden.pk %}">
                         {% csrf_token %}
+                        <input type="hidden" name="last_updated" value="{{ orden.updated_at|date:'U' }}">
                         <button type="submit" class="btn btn-success">Si, Aprobar</button>
                     </form>
                 </div>

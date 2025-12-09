@@ -109,13 +109,14 @@ class OrdenCompra(models.Model):
     neto = models.DecimalField("Neto", max_digits=12, decimal_places=0, default=0)
     iva = models.DecimalField("IVA (19%)", max_digits=12, decimal_places=0, default=0)
     monto_total = models.DecimalField("Monto Total", max_digits=12, decimal_places=0, default=0)
-    estado = models.CharField("Estado", max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+    estado = models.CharField("Estado", max_length=20, choices=ESTADO_CHOICES, default='EN_ESPERA')
     solicitante = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordenes_solicitadas')
     
     # Campos para historial de anulaciones
     motivo_anulacion = models.TextField("Motivo de anulación", blank=True, null=True)
     usuario_anulo = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordenes_anuladas')
     fecha_anulacion = models.DateTimeField("Fecha de anulación", null=True, blank=True)
+    updated_at = models.DateTimeField("Última actualización", auto_now=True)
 
     def __str__(self):
         return f"OC-{self.id}"

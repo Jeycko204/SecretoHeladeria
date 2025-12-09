@@ -73,7 +73,7 @@
                     </form>
                     {% endif %}
                     {% endif %}
-                    {% if orden.estado != 'EN_ESPERA' and orden.estado != 'RECHAZADO' and orden.estado != 'CERRADA' %}
+                    {% if orden.estado == 'EN_ESPERA' %}
                     {% if perms.can_edit_oc %}
                     <a href="{% url 'compras:orden_compra_edit' orden.id %}" class="btn btn-sm btn-link">[Editar]</a>
                     {% endif %}
