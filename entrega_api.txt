@@ -1,0 +1,46 @@
+Entrega: API de Compras - Secreto Heladería
+Alumno: Nicolas Araya - Luciano Balbontin - Pablo Millaqueo
+
+1. URL del Servidor
+URL Base: http://52.55.198.58:8080/
+API Root: http://52.55.198.58:8080/api/
+
+2. Usuarios de Prueba
+
+- Jefe de Compras (Puede crear órdenes):
+  User: jefe_compras
+  Pass: Jefe123!
+
+- Finanzas (Aprueba o rechaza):
+  User: finanzas
+  Pass: Finanzas123!
+
+- Bodeguero (Cierra la orden cuando llega):
+  User: bodeguero
+  Pass: Bodega123!
+
+- Superadmin (Acceso total):
+  User: root
+  Pass: root
+
+3. Endpoints Principales
+/api/token/ Para sacar el token JWT (Login).
+/api/proveedores/ CRUD de proveedores.
+/api/ordenes/ Aquí se hacen las órdenes de compra.
+
+4. Cómo probar
+curl -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "jefe_compras", "password": "Jefe123!"}'
+
+Crear una Orden (Copiar el token del paso anterior donde dice TOKEN_JEFE)
+curl -X POST http://52.55.198.58:8080/api/ordenes/ -H "Authorization: Bearer TOKEN_JEFE" -H "Content-Type: application/json" -d '{"detalles": [{"proveedor": 1, "insumo": "Prueba API", "unidad_medida": "UN", "cantidad": 10, "precio_unitario": 500}]}'
+
+Aprobar con Finanzas
+curl -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "finanzas", "password": "Finanzas123!"}'
+Aprobar la orden (ej: ID 1)
+curl -X POST http://52.55.198.58:8080/api/ordenes/1/aprobar/ -H "Authorization: Bearer TOKEN_FINANZAS"
+
+Cerrar con Bodega
+curl -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "bodeguero", "password": "Bodega123!"}'
+Cerrar orden
+curl -X POST http://52.55.198.58:8080/api/ordenes/1/cerrar/ -H "Authorization: Bearer TOKEN_BODEGA"
+

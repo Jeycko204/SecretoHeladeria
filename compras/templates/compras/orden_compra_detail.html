@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{% url 'compras:orden_compra_list' %}" class="btn btn-outline-secondary">Volver al menu</a>
+    </div>
+
+    <div class="text-center mb-4">
+        <div class="border p-2 d-inline-block">
+            <strong>Neto:</strong> ${{ orden.neto }}<br>
+            <strong>IVA (19%):</strong> ${{ orden.iva }}<br>
+            <strong>Total Compra:</strong> ${{ orden.monto_total }}
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Proveedor</th>
+                <th>Insumo</th>
+                <th>Unidad de medida</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Subtotal</th>
+                <th>Fecha</th>
+                <th>Solicitante</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in orden.detalles.all %}
+            <tr>
+                <td>{{ detalle.proveedor.nombre }}</td>
+                <td>{{ detalle.insumo }}</td>
+                <td>{{ detalle.unidad_medida }}</td>
+                <td>{{ detalle.cantidad }}</td>
+                <td>{{ detalle.precio_unitario }}</td>
+                <td>{{ detalle.subtotal }}</td>
+                <td>{{ orden.fecha_emision|date:"d-m-Y" }}</td>
+                <td>{{ orden.solicitante.username|default:"Sistema" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="d-flex justify-content-center mt-4 gap-2">
+        {% if orden.estado == 'RECHAZADA' %}
+        {% if perms.can_create_oc %}
+        <a href="{% url 'compras:orden_compra_create' %}?source_order_id={{ orden.id }}"
+            class="btn btn-outline-dark">Copiar y crear nueva</a>
+        {% endif %}
+
+        {% elif orden.estado == 'EN_ESPERA' %}
+        {# Botones para Finanzas #}
+        {% if perms.can_approve_oc %}
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#aprobarModal">
+            Aprobar
+        </button>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rechazarModal">
+            Rechazar
+        </button>
+        {% endif %}
+
+        {# Botón para Compras (Anular) #}
+        {% if perms.can_anular_oc %}
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#anularModal">
+            Anular
+        </button>
+        {% endif %}
+
+        {% elif orden.estado == 'APROBADA' %}
+        {# Botón para Bodega #}
+        {% if perms.can_close_oc %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cerrarModal">
+            Cerrar
+        </button>
+        {% endif %}
+
+        {% elif orden.estado == 'CERRADA' %}
+        <p class="text-success"><strong>Esta orden ha sido cerrada y registrada en Reporte de Compras.</strong></p>
+        {% endif %}
+    </div>
+
+    <!-- Modals -->
+    <!-- Aprobar Modal -->
+    <div class="modal fade" id="aprobarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Aprobación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Está seguro de Aprobar la orden de compra?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <form method="post" action="{% url 'compras:orden_compra_aprobar' orden.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="last_updated" value="{{ orden.updated_at|date:'U' }}">
+                        <button type="submit" class="btn btn-success">Si, Aprobar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rechazar Modal -->
+    <div class="modal fade" id="rechazarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Rechazo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Está seguro de Rechazar la orden de compra?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <form method="post" action="{% url 'compras:orden_compra_rechazar' orden.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Si, Rechazar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cerrar Modal -->
+    <div class="modal fade" id="cerrarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Cierre</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Desea cerrar la orden de compra?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <form method="post" action="{% url 'compras:orden_compra_cerrar' orden.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Si, Cerrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Anular Modal -->
+    <div class="modal fade" id="anularModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Anulación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Está seguro de Anular la orden de compra?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <form method="post" action="{% url 'compras:orden_compra_anular' orden.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" name="clonar" value="false" class="btn btn-warning">Si, Anular</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

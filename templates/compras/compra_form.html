@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Compra - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Registrar Nueva Compra</h2>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="card p-4">
+            <div class="form-group mb-3">
+                <label for="{{ form.proveedor.id_for_label }}">Proveedor</label>
+                {{ form.proveedor }}
+                {% if form.proveedor.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.proveedor.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="form-group mb-3">
+                <label for="{{ form.numero_factura.id_for_label }}">Número de Factura</label>
+                {{ form.numero_factura }}
+                {% if form.numero_factura.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.numero_factura.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="form-group mb-3">
+                <label for="{{ form.fecha_compra.id_for_label }}">Fecha de Compra</label>
+                {{ form.fecha_compra }}
+                {% if form.fecha_compra.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.fecha_compra.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="form-group mb-3">
+                <label for="{{ form.monto_total.id_for_label }}">Monto Total</label>
+                {{ form.monto_total }}
+                {% if form.monto_total.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.monto_total.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="form-group mb-3">
+                <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}
+                <div class="mt-1" style="color: red; font-weight: bold;">
+                    {% for error in form.descripcion.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Guardar Compra</button>
+            <a href="{% url 'compras:compras_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

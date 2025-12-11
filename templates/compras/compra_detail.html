@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Compra - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Detalle de Compra</h2>
+
+    <div class="card">
+        <div class="card-header">
+            Factura #{{ compra.numero_factura }}
+        </div>
+        <div class="card-body">
+            <p><strong>Proveedor:</strong> {{ compra.proveedor }}</p>
+            <p><strong>Fecha de Compra:</strong> {{ compra.fecha_compra|date:"d/m/Y" }}</p>
+            <p><strong>Monto Total:</strong> ${{ compra.monto_total|floatformat:0 }}</p>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'compras:compras_list' %}" class="btn btn-secondary">Volver al Listado</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

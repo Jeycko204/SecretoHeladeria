@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Compras - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>Módulo de Compras</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>{{ proveedores_count }}</h3>
+            <p>Proveedores</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ compras_count }}</h3>
+            <p>Compras Registradas</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ categorias_count }}</h3>
+            <p>Categorías</p>
+        </div>
+        <div class="stat-card">
+            <h3>${{ gasto_total|floatformat:0 }}</h3>
+            <p>Gasto Semanal</p>
+        </div>
+    </div>
+
+    <div class="nav d-flex justify-content-center gap-4 mt-4">
+        {% if perms.can_view_proveedores %}
+        <a href="{% url 'compras:proveedores_list' %}" class="btn btn-lg px-5 py-3"
+            style="background-color: #fce4ec; color: #5d4037; border: 2px solid #5d4037; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 1.3rem;">Proveedores</a>
+        <a href="{% url 'compras:categorias_list' %}" class="btn btn-lg px-5 py-3"
+            style="background-color: #fce4ec; color: #5d4037; border: 2px solid #5d4037; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 1.3rem;">Categorías</a>
+        <a href="{% url 'compras:compras_list' %}" class="btn btn-lg px-5 py-3"
+            style="background-color: #fce4ec; color: #5d4037; border: 2px solid #5d4037; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 1.3rem;">Reporte
+            de Compras</a>
+        {% endif %}
+
+        {% if perms.can_view_ordenes %}
+        <a href="{% url 'compras:orden_compra_list' %}" class="btn btn-lg px-5 py-3"
+            style="background-color: #fce4ec; color: #5d4037; border: 2px solid #5d4037; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 1.3rem;">Ordenes
+            de Compra</a>
+        {% endif %}
+
+        {% if perms.can_view_reportes %}
+        <a href="{% url 'compras:historial_anulaciones' %}" class="btn btn-lg px-5 py-3"
+            style="background-color: #fff3cd; color: #856404; border: 2px solid #856404; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 1.3rem;">Historial
+            de Anulaciones</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

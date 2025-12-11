@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Registrar OC" }} - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>Ordenes de Compra</h2>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Buttons at top -->
+        <div class="d-flex justify-content-between mb-4">
+            <a href="{% url 'compras:compras' %}" class="btn btn-outline-secondary">Volver al menu</a>
+            <button type="submit" class="btn btn-primary">Confirmar y enviar</button>
+        </div>
+
+        <!-- Total Compra Box -->
+        <div class="d-flex justify-content-end mb-3">
+            <div class="border p-3" style="min-width: 200px;">
+                <div class="text-center">
+                    <small>Total Compra</small><br>
+                    <strong id="totalCompra">$0</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        {{ formset.management_form }}
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Categoría Proveedor</th>
+                    <th>Proveedor</th>
+                    <th>Insumo</th>
+                    <th>Unidad de medida</th>
+                    <th>Cantidad</th>
+                    <th>Precio unitario</th>
+                    <th>Subtotal</th>
+                    <th>Fecha</th>
+                    <th>Solicitante</th>
+                    <th>Eliminar</th>
+                </tr>
+            </thead>
+            <tbody id="formset-body">
+                {% for form in formset %}
+                <tr class="formset-row">
+                    <td>
+                        <select class="form-control provider-category-filter" onchange="loadProveedores(this)">
+                            <option value="">Todas</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        {{ form.proveedor }}
+                        {% if form.proveedor.errors %}
+                        <div class="mt-1" style="color: red; font-weight: bold;">
+                            {% for error in form.proveedor.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ form.insumo }} <!-- Hidden -->
+                        {{ form.insumo_fk }}
+                        {% if form.insumo_fk.errors %}
+                        <div class="mt-1" style="color: red; font-weight: bold;">
+                            {% for error in form.insumo_fk.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ form.unidad_medida }}
+                        {% if form.unidad_medida.errors %}
+                        <div class="mt-1" style="color: red; font-weight: bold;">
+                            {% for error in form.unidad_medida.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ form.cantidad }}
+                        {% if form.cantidad.errors %}
+                        <div class="mt-1" style="color: red; font-weight: bold;">
+                            {% for error in form.cantidad.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ form.precio_unitario }}
+                        {% if form.precio_unitario.errors %}
+                        <div class="mt-1" style="color: red; font-weight: bold;">
+                            {% for error in form.precio_unitario.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="subtotal-cell">$0</td>
+                    <td>{{ "now"|date:"d-m-Y" }}</td>
+                    <td>{{ user.username|default:"A" }}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger delete-row">X</button>
+                    </td>
+                    {{ form.id }}
+                    {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button type="button" class="btn btn-sm btn-secondary" id="add-row">+ Agregar fila</button>
+    </form>
+</div>
+
+<script>
+    // Auto-calculate subtotals and total
+    document.addEventListener('DOMContentLoaded', function () {
+        const formsetBody = document.getElementById('formset-body');
+
+        function updateTotals() {
+            let total = 0;
+            document.querySelectorAll('.formset-row').forEach(row => {
+                const cantidad = parseFloat(row.querySelector('[name$="-cantidad"]')?.value) || 0;
+                const precio = parseFloat(row.querySelector('[name$="-precio_unitario"]')?.value) || 0;
+                const subtotal = cantidad * precio;
+
+                row.querySelector('.subtotal-cell').textContent = '$' + subtotal.toFixed(0);
+                total += subtotal;
+            });
+
+            const iva = total * 0.19;
+            const totalConIva = total + iva;
+            document.getElementById('totalCompra').textContent = '$' + totalConIva.toFixed(0);
+        }
+
+        function updateFormIndices() {
+            const rows = document.querySelectorAll('.formset-row');
+            rows.forEach((row, index) => {
+                row.querySelectorAll('input, select, textarea').forEach(input => {
+                    if (input.name) {
+                        input.name = input.name.replace(/-\d+-/, `-${index}-`);
+                        input.id = input.id?.replace(/-\d+-/, `-${index}-`);
+                    }
+                });
+            });
+
+            const totalForms = document.querySelector('[name$="-TOTAL_FORMS"]');
+            totalForms.value = rows.length;
+        }
+
+        function checkMinRows() {
+            const rows = document.querySelectorAll('.formset-row');
+            const deleteButtons = document.querySelectorAll('.delete-row');
+
+            // Disable delete buttons if only one row remains
+            if (rows.length <= 1) {
+                deleteButtons.forEach(btn => btn.disabled = true);
+            } else {
+                deleteButtons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        formsetBody.addEventListener('input', function (e) {
+            updateTotals();
+
+            // Input restrictions
+            if (e.target.matches('input[name$="-cantidad"]') || e.target.matches('input[name$="-precio_unitario"]')) {
+                // Remove non-numeric characters (except dot for decimals in cantidad)
+                if (e.target.name.includes('cantidad')) {
+                    e.target.value = e.target.value.replace(/[^0-9\.]/g, '');
+                } else {
+                    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                }
+            }
+        });
+
+        updateTotals();
+        checkMinRows();
+
+        // Delete row functionality
+        formsetBody.addEventListener('click', function (e) {
+            if (e.target.classList.contains('delete-row')) {
+                const rows = document.querySelectorAll('.formset-row');
+                if (rows.length > 1) {
+                    e.target.closest('.formset-row').remove();
+                    updateFormIndices();
+                    updateTotals();
+                    checkMinRows();
+                } else {
+                    alert('Debe mantener al menos una fila en la orden.');
+                }
+            }
+        });
+
+        // Add row functionality
+        document.getElementById('add-row').addEventListener('click', function () {
+            const rows = document.querySelectorAll('.formset-row');
+            const newRow = rows[0].cloneNode(true);
+
+            // Clear all inputs in the new row
+            newRow.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.checked = false;
+                } else if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = '';
+                }
+            });
+
+            // Remove error messages in new row
+            newRow.querySelectorAll('.text-danger').forEach(el => el.remove());
+
+            // Reset subtotal
+            newRow.querySelector('.subtotal-cell').textContent = '$0';
+
+            formsetBody.appendChild(newRow);
+            updateFormIndices();
+            updateTotals();
+            checkMinRows();
+        });
+    });
+
+    function loadProveedores(element) {
+        const row = element.closest('.formset-row');
+        const categoryId = element.value;
+        const providerSelect = row.querySelector('[name$="-proveedor"]');
+
+        // Reset provider and insumo
+        providerSelect.innerHTML = '<option value="">---------</option>';
+        row.querySelector('[name$="-insumo_fk"]').innerHTML = '<option value="">---------</option>';
+
+        let url = `{% url 'compras:api_get_proveedores' %}`;
+        if (categoryId) {
+            url += `?categoria_id=${categoryId}`;
+        }
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.proveedores) {
+                    data.proveedores.forEach(prov => {
+                        const option = document.createElement('option');
+                        option.value = prov.id;
+                        option.textContent = prov.nombre;
+                        providerSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function loadInsumos(element) {
+        const row = element.closest('.formset-row');
+        const providerSelect = row.querySelector('[name$="-proveedor"]');
+        const providerId = providerSelect.value;
+        // Get category from the first column (provider category)
+        const categoryId = row.querySelector('.provider-category-filter').value;
+        const insumoSelect = row.querySelector('[name$="-insumo_fk"]');
+
+        if (!providerId) {
+            insumoSelect.innerHTML = '<option value="">---------</option>';
+            return;
+        }
+
+        let url = `{% url 'compras:api_get_insumos' %}?proveedor_id=${providerId}`;
+        if (categoryId) {
+            url += `&categoria_id=${categoryId}`;
+        }
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const currentVal = insumoSelect.value;
+                insumoSelect.innerHTML = '<option value="">---------</option>';
+                if (data.insumos) {
+                    data.insumos.forEach(insumo => {
+                        const option = document.createElement('option');
+                        option.value = insumo.id;
+                        option.textContent = insumo.nombre;
+                        option.dataset.unidad = insumo.unidad_medida;
+                        option.dataset.nombre = insumo.nombre;
+                        if (insumo.id == currentVal) option.selected = true;
+                        insumoSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[name$="-insumo_fk"]')) {
+            const row = e.target.closest('.formset-row');
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const unidadInput = row.querySelector('[name$="-unidad_medida"]');
+            const insumoNameInput = row.querySelector('[name$="-insumo"]');
+
+            if (selectedOption.value) {
+                unidadInput.value = selectedOption.dataset.unidad || '';
+                insumoNameInput.value = selectedOption.dataset.nombre || selectedOption.textContent;
+            } else {
+                unidadInput.value = '';
+                insumoNameInput.value = '';
+            }
+        }
+    });
+
+</script>
+{% endblock %}

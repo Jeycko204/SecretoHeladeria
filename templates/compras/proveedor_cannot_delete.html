@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}No se puede eliminar - Proveedor{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>No se puede eliminar al proveedor: <strong>{{ proveedor.nombre }}</strong></h2>
+    <div class="alert alert-warning">
+        Este proveedor está referenciado por una o más compras y la base de datos impide su eliminación para mantener integridad.
+    </div>
+
+    {% if compras %}
+    <div class="card mb-3">
+        <div class="card-header">Compras relacionadas</div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Número de factura</th>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for compra in compras %}
+                    <tr>
+                        <td>{{ compra.numero_factura }}</td>
+                        <td>{{ compra.fecha_compra|date:"d/m/Y" }}</td>
+                        <td>${{ compra.monto_total|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="mb-3">
+        <p>Para eliminar el proveedor tienes estas opciones:</p>
+        <ul>
+            <li>Eliminar o reasignar las compras listadas manualmente desde el módulo de Compras.</li>
+            <li>Editar el proveedor si solo necesitas desactivarlo en vez de borrarlo.</li>
+            <li>Si deseas que al borrar un proveedor también se borren sus compras (peligroso), podemos cambiar la relación en el modelo `Compra` a <code>on_delete=models.CASCADE</code> o <code>SET_NULL</code> (requiere migración y respaldo previo).</li>
+        </ul>
+    </div>
+    {% else %}
+    <div class="alert alert-info">No se encontraron compras relacionadas — ocurrió un error inesperado.</div>
+    {% endif %}
+
+    <a href="{% url 'compras:proveedores_list' %}" class="btn btn-secondary">← Volver a Proveedores</a>
+    <a href="{% url 'compras:compras_list' %}" class="btn btn-primary">Ir a Compras</a>
+</div>
+{% endblock %}

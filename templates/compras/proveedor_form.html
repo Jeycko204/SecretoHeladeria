@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>{{ title }}</h2>
+
+    <form method="post" id="proveedorForm">
+        {% csrf_token %}
+
+        <div class="row">
+            <div class="col-md-6">
+                {% for field in form %}
+                {% if field.name != 'insumos' and field.name != 'dias_entrega' %}
+                {% if field.name == 'agregar_contacto_secundario' %}
+                <div class="form-check mb-3">
+                    {{ field }}
+                    <label class="form-check-label" for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+                </div>
+                {% elif 'contacto_secundario' in field.name %}
+                <div class="form-group mb-3 secondary-contact-field" style="display: none;">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.errors %}<span style="color: red; font-weight: bold;"> *</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="form-group mb-3">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.errors %}<span style="color: red; font-weight: bold;"> *</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="mt-1" style="color: red; font-weight: bold;">
+                        {% for error in field.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+                {% endfor %}
+
+                <div class="form-group mb-3">
+                    <label>{{ form.dias_entrega.label }} <span style="color: red; font-weight: bold;"> *</span></label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for value, text in form.dias_entrega.field.choices %}
+                        <div class="form-check me-3">
+                            <input class="form-check-input" type="checkbox" name="dias_entrega" value="{{ value }}" id="id_dias_entrega_{{ forloop.counter0 }}" {% if value in form.dias_entrega.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_dias_entrega_{{ forloop.counter0 }}">{{ text }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.dias_entrega.errors %}
+                    <div class="mt-1" style="color: red; font-weight: bold;">
+                        {% for error in form.dias_entrega.errors %}<small>{{ error }}</small>{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <h4>Insumos que ofrece</h4>
+                <p class="text-muted small">Agregue los insumos que vende este proveedor.</p>
+
+                <div style="display:none;" id="insumosDataContainer"></div>
+
+                <table class="table table-bordered table-sm" id="insumosTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Nombre del Insumo</th>
+                            <th>Unidad de Medida</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="insumosBody"></tbody>
+                </table>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="addInsumoRow">+ Agregar Insumo</button>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="{% url 'compras:proveedores_list' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const insumosBody = document.getElementById('insumosBody');
+        const addBtn = document.getElementById('addInsumoRow');
+        const dataContainer = document.getElementById('insumosDataContainer');
+
+        const categories = [{% for cat in categorias %}{ id: "{{ cat.id }}", nombre: "{{ cat.nombre }}" }, {% endfor %}];
+
+    const unidadesMedida = ['gr', 'ml', 'L', 'kg', 'cajón', 'caja', 'unidad', 'paquete', 'bolsa', 'Display de 8', 'Display de 12', 'Display de 20', 'Display de 24'];
+
+    function createRow(data = null) {
+        const tr = document.createElement('tr');
+
+        let catOptions = '<option value="">Seleccione...</option>';
+        categories.forEach(cat => {
+            const selected = data && data.categoria == cat.id ? 'selected' : '';
+            catOptions += `<option value="${cat.id}" ${selected}>${cat.nombre}</option>`;
+        });
+
+        let unidadOptions = '<option value="">Seleccione...</option>';
+        unidadesMedida.forEach(unidad => {
+            const selected = data && data.unidad_medida == unidad ? 'selected' : '';
+            unidadOptions += `<option value="${unidad}" ${selected}>${unidad}</option>`;
+        });
+
+        const nombreValue = data ? data.nombre : '';
+
+        tr.innerHTML = `
+                <td><select class="form-control form-control-sm categoria-select" required>${catOptions}</select></td>
+                <td><input type="text" class="form-control form-control-sm nombre-input" value="${nombreValue}" placeholder="Nombre del insumo" required></td>
+                <td><select class="form-control form-control-sm unidad-select" required>${unidadOptions}</select></td>
+                <td><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
+            `;
+
+        insumosBody.appendChild(tr);
+
+        const removeBtn = tr.querySelector('.remove-row');
+        removeBtn.addEventListener('click', function () { tr.remove(); syncData(); });
+
+        tr.querySelector('.categoria-select').addEventListener('change', syncData);
+        tr.querySelector('.nombre-input').addEventListener('input', syncData);
+        tr.querySelector('.unidad-select').addEventListener('change', syncData);
+    }
+
+    function syncData() {
+        dataContainer.innerHTML = '';
+        const rows = insumosBody.querySelectorAll('tr');
+        rows.forEach((row, index) => {
+            const categoria = row.querySelector('.categoria-select').value;
+            const nombre = row.querySelector('.nombre-input').value.trim();
+            const unidad = row.querySelector('.unidad-select').value;
+
+            if (categoria && nombre && unidad) {
+                const inputCat = document.createElement('input');
+                inputCat.type = 'hidden';
+                inputCat.name = `insumos_data[${index}][categoria]`;
+                inputCat.value = categoria;
+                dataContainer.appendChild(inputCat);
+
+                const inputNombre = document.createElement('input');
+                inputNombre.type = 'hidden';
+                inputNombre.name = `insumos_data[${index}][nombre]`;
+                inputNombre.value = nombre;
+                dataContainer.appendChild(inputNombre);
+
+                const inputUnidad = document.createElement('input');
+                inputUnidad.type = 'hidden';
+                inputUnidad.name = `insumos_data[${index}][unidad_medida]`;
+                inputUnidad.value = unidad;
+                dataContainer.appendChild(inputUnidad);
+            }
+        });
+    }
+
+    addBtn.addEventListener('click', () => createRow());
+
+    createRow();
+
+    // Restrict RUT input to numbers, K, k, and formatting characters (-, .)
+    const rutInput = document.querySelector('input[name="rut"]');
+    if (rutInput) {
+        rutInput.addEventListener('input', function (e) {
+            // Allow only numbers, K, k, dash, and dot
+            this.value = this.value.replace(/[^0-9kK\-\.]/g, '');
+        });
+    }
+
+    // Restrict phone input to numbers and formatting characters (+, -, (, ), space)
+    const telefonoInput = document.querySelector('input[name="telefono"]');
+    if (telefonoInput) {
+        telefonoInput.addEventListener('input', function (e) {
+            // Allow only numbers and phone formatting characters
+            this.value = this.value.replace(/[^0-9\+\-\(\)\s]/g, '');
+        });
+    }
+
+    // Restrict nombre (company name) - no numbers
+    const nombreInput = document.querySelector('input[name="nombre"]');
+    if (nombreInput) {
+        nombreInput.addEventListener('input', function (e) {
+            // Remove any numbers
+            this.value = this.value.replace(/[0-9]/g, '');
+        });
+    }
+
+    // Restrict contacto (contact name) - no numbers
+    const contactoInput = document.querySelector('input[name="contacto"]');
+    if (contactoInput) {
+        contactoInput.addEventListener('input', function (e) {
+            // Remove any numbers
+            this.value = this.value.replace(/[0-9]/g, '');
+        });
+    }
+
+    // Restrict tiempo_entrega to positive numbers only
+    const tiempoInput = document.querySelector('input[name="tiempo_entrega"]');
+    if (tiempoInput) {
+        tiempoInput.addEventListener('input', function (e) {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            // Ensure it's within range
+            if (this.value && parseInt(this.value) > 30) {
+                this.value = '30';
+            }
+        });
+    }
+
+    // Restrict monto_minimo to positive numbers only
+    const montoInput = document.querySelector('input[name="monto_minimo"]');
+    if (montoInput) {
+        montoInput.addEventListener('input', function (e) {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+    // Toggle secondary contact fields
+    const checkbox = document.querySelector('input[name="agregar_contacto_secundario"]');
+    const secondaryFields = document.querySelectorAll('.secondary-contact-field');
+
+    function toggleSecondaryFields() {
+        const isChecked = checkbox.checked;
+        secondaryFields.forEach(div => {
+            div.style.display = isChecked ? 'block' : 'none';
+            const input = div.querySelector('input');
+            if (input) {
+                if (isChecked) {
+                    input.setAttribute('required', 'required');
+                } else {
+                    input.removeAttribute('required');
+                    input.value = ''; // Clear value when hiding
+                }
+            }
+        });
+    }
+
+    if (checkbox) {
+        checkbox.addEventListener('change', toggleSecondaryFields);
+        // Initial check
+        toggleSecondaryFields();
+    }
+    });
+</script>
+{% endblock %}

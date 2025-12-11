@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Menú Principal - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Menú Principal</h1>
+
+    {% if can_access_compras %}
+    <div class="row justify-content-center">
+        <div class="col-md-6 mb-4">
+            <div class="card border-2" style="border-color: #5d4037;">
+                <div class="card-body text-center">
+                    <h5 class="card-title" style="color: #5d4037; font-weight: bold;">Compras</h5>
+                    <p class="card-text">Gestión de proveedores, categorías, compras y reportes de costos.</p>
+                    <a href="{% url 'compras:compras' %}" class="btn btn-lg px-5 py-3"
+                        style="background-color: #fce4ec; color: #5d4037; border: 2px solid #5d4037; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 1.3rem;">Ir
+                        a Compras</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+        No tienes permisos para ver el contenido de esta página.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

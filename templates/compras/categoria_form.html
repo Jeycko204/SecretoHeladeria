@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Secreto Heladería{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2>{{ title }}</h2>
+        <a href="{% url 'compras:categorias_list' %}" class="btn btn-secondary">← Volver</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" novalidate id="categoriaForm">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="form-group mb-3">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.errors %}<span style="color: red; font-weight: bold;"> *</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="mt-1" style="color: red; font-weight: bold;">
+                        {% for error in field.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-success">Guardar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Restrict nombre (category name) - no numbers
+        const nombreInput = document.querySelector('input[name="nombre"]');
+        if (nombreInput) {
+            nombreInput.addEventListener('input', function (e) {
+                // Remove any numbers
+                this.value = this.value.replace(/[0-9]/g, '');
+            });
+        }
+    });
+</script>
+{% endblock %}
