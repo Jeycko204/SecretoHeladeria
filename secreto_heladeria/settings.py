@@ -77,8 +77,12 @@ WSGI_APPLICATION = "secreto_heladeria.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "secreto_heladeria_db",
+        "USER": "secreto_user",
+        "PASSWORD": "2417",
+        "HOST": "localhost",
+        "PORT": "3306",
     }
 }
 

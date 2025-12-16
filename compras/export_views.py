@@ -15,7 +15,7 @@ def _admin_check(user):
 admin_required = user_passes_test(_admin_check, login_url='login')
 
 @admin_required
-def export_compras_excel(request):
+def exportar_compras_excel(request):
     """Exporta la lista de compras a Excel."""
     compras = Compra.objects.all().order_by('-fecha_compra')
     
@@ -60,7 +60,7 @@ def export_compras_excel(request):
     return response
 
 @admin_required
-def export_compras_pdf(request):
+def exportar_compras_pdf(request):
     """Exporta la lista de compras a PDF."""
     compras = Compra.objects.all().order_by('-fecha_compra')
     
@@ -102,7 +102,7 @@ def export_compras_pdf(request):
     return response
 
 @admin_required
-def export_ordenes_excel(request):
+def exportar_ordenes_excel(request):
     """Exporta la lista de órdenes de compra a Excel."""
     ordenes = OrdenCompra.objects.all().order_by('-fecha_emision')
     
@@ -148,7 +148,7 @@ def export_ordenes_excel(request):
     return response
 
 @admin_required
-def export_ordenes_pdf(request):
+def exportar_ordenes_pdf(request):
     """Exporta la lista de órdenes de compra a PDF."""
     ordenes = OrdenCompra.objects.all().order_by('-fecha_emision')
     
@@ -191,7 +191,7 @@ def export_ordenes_pdf(request):
     return response
 
 @admin_required
-def export_proveedores_excel(request):
+def exportar_proveedores_excel(request):
     """Exporta la lista de proveedores a Excel."""
     proveedores = Proveedor.objects.all().order_by('nombre')
     
@@ -238,7 +238,7 @@ def export_proveedores_excel(request):
     return response
 
 @admin_required
-def export_proveedores_pdf(request):
+def exportar_proveedores_pdf(request):
     """Exporta la lista de proveedores a PDF."""
     proveedores = Proveedor.objects.all().order_by('nombre')
     

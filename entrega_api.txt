@@ -7,17 +7,17 @@ API Root: http://52.55.198.58:8080/api/
 
 2. Usuarios de Prueba
 
-- Jefe de Compras (Puede crear órdenes):
-  User: jefe_compras
-  Pass: Jefe123!
+- Jefe de Compras (Puede crear órdenes, ver todo, no editar en espera):
+  User: compras@test.cl
+  Pass: 123
 
 - Finanzas (Aprueba o rechaza):
-  User: finanzas
-  Pass: Finanzas123!
+  User: finanzas@test.cl
+  Pass: 123
 
 - Bodeguero (Cierra la orden cuando llega):
-  User: bodeguero
-  Pass: Bodega123!
+  User: bodega@test.cl
+  Pass: 123
 
 - Superadmin (Acceso total):
   User: root
@@ -28,19 +28,65 @@ API Root: http://52.55.198.58:8080/api/
 /api/proveedores/ CRUD de proveedores.
 /api/ordenes/ Aquí se hacen las órdenes de compra.
 
-4. Cómo probar
-curl -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "jefe_compras", "password": "Jefe123!"}'
+ Datos de Prueba (Copiar y Pegar en API)
 
-Crear una Orden (Copiar el token del paso anterior donde dice TOKEN_JEFE)
-curl -X POST http://52.55.198.58:8080/api/ordenes/ -H "Authorization: Bearer TOKEN_JEFE" -H "Content-Type: application/json" -d '{"detalles": [{"proveedor": 1, "insumo": "Prueba API", "unidad_medida": "UN", "cantidad": 10, "precio_unitario": 500}]}'
+A. Crear Proveedor (JSON)
+{
+    "nombre": "Distribuidora Inacap",
+    "rut": "76.482.190-3",
+    "contacto": "Inacap",
+    "telefono": "955443322",
+    "email": "inacap@inacap.cl",
+    "direccion": "Fco Aguirre",
+    "dias_entrega": "Martes y Viernes",
+    "tiempo_entrega": 2,
+    "monto_minimo": 50000,
+    "insumos": [1, 2]
+}
 
-Aprobar con Finanzas
-curl -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "finanzas", "password": "Finanzas123!"}'
-Aprobar la orden (ej: ID 1)
-curl -X POST http://52.55.198.58:8080/api/ordenes/1/aprobar/ -H "Authorization: Bearer TOKEN_FINANZAS"
+B. Crear Orden de Compra (JSON)
+{
+    "detalles": [
+        {
+            "proveedor": 4,
+            "insumo": "Leche descremada 1L",
+            "unidad_medida": "Litro",
+            "cantidad": 20,
+            "precio_unitario": 4500
+        }
+    ]
+}
 
-Cerrar con Bodega
-curl -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "bodeguero", "password": "Bodega123!"}'
-Cerrar orden
-curl -X POST http://52.55.198.58:8080/api/ordenes/1/cerrar/ -H "Authorization: Bearer TOKEN_BODEGA"
+4. Pruebas por Terminal (cURL)
 
+A. Obtener Token (Login)
+TOKEN=$(curl -s -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "compras@test.cl", "password": "123"}' | jq -r .access) && echo "Token: $TOKEN"
+
+B. Crear Proveedor (Inacap)
+curl -X POST http://52.55.198.58:8080/api/proveedores/ -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"nombre": "Distribuidora Inacap", "rut": "76.482.190-3", "contacto": "Sede Inacap", "telefono": "955443322", "email": "inacap@inacap.cl", "direccion": "Av. Siempreviva 742", "dias_entrega": "Lunes y Jueves", "tiempo_entrega": 3, "monto_minimo": 20000, "insumos": [1, 2]}'
+
+C. Editar Proveedor (PUT)
+# Asumiendo ID del proveedor creado es 5 (ajustar ID en la URL)
+curl -X PUT http://52.55.198.58:8080/api/proveedores/5/ -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"nombre": "Distribuidora Inacap Editada", "rut": "76.482.190-3", "contacto": "Sede Central", "telefono": "999888777", "email": "contacto@inacap.cl", "direccion": "Nueva Direccion 123", "dias_entrega": "Viernes", "tiempo_entrega": 1, "monto_minimo": 10000, "insumos": [1]}'
+
+D. Crear Orden de Compra
+# Asumiendo ID proveedor 5
+curl -X POST http://52.55.198.58:8080/api/ordenes/ -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"detalles": [{"proveedor": 5, "insumo": "Harina Quintal", "unidad_medida": "Saco 25kg", "cantidad": 10, "precio_unitario": 15000}]}'
+
+E. Aprobar Orden (Finanzas)
+# Login Finanzas
+TOKEN_FIN=$(curl -s -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "finanzas@test.cl", "password": "123"}' | jq -r .access)
+
+# Aprobar Orden ID 1
+curl -X POST http://52.55.198.58:8080/api/ordenes/1/aprobar/ -H "Authorization: Bearer $TOKEN_FIN"
+
+F. Rechazar Orden (Finanzas)
+# Rechazar Orden ID 2
+curl -X POST http://52.55.198.58:8080/api/ordenes/2/rechazar/ -H "Authorization: Bearer $TOKEN_FIN"
+
+G. Cerrar Orden (Bodega)
+# Login Bodega
+TOKEN_BOD=$(curl -s -X POST http://52.55.198.58:8080/api/token/ -H "Content-Type: application/json" -d '{"username": "bodega@test.cl", "password": "123"}' | jq -r .access)
+
+# Cerrar Orden ID 1 (Debe estar APROBADA)
+curl -X POST http://52.55.198.58:8080/api/ordenes/1/cerrar/ -H "Authorization: Bearer $TOKEN_BOD"

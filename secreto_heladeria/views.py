@@ -4,7 +4,7 @@ from django.contrib.auth import login
 from django.core.exceptions import ValidationError
 import re
 
-def home_view(request):
+def vista_inicio(request):
     if not request.user.is_authenticated:
         from django.urls import reverse
         from django.shortcuts import redirect
@@ -16,13 +16,21 @@ def home_view(request):
         role = 'superuser'
     else:
         try:
-            if hasattr(request.user, 'profile'):
+            if hasattr(request.user, 'profile') and request.user.profile.department:
                 role = request.user.profile.department # 'COMPRAS', 'BODEGA', 'FINANZAS'
             else:
-                empleado = request.user.empleado
-                role = empleado.rol
+                # Alternativa: verificar grupos
+                if request.user.groups.filter(name='BODEGA').exists():
+                    role = 'BODEGA'
+                elif request.user.groups.filter(name='COMPRAS').exists():
+                    role = 'COMPRAS'
+                elif request.user.groups.filter(name='FINANZAS').exists():
+                    role = 'FINANZAS'
+                else:
+                    empleado = getattr(request.user, 'empleado', None)
+                    role = empleado.rol if empleado else None
         except Exception:
-            # Si no hay relación, role queda None
+            # Si no hay relación, el rol queda como None
             role = None
     
     allowed_roles = ['administrador', 'jefe_compras', 'superuser', 'COMPRAS', 'BODEGA', 'FINANZAS']
@@ -30,7 +38,7 @@ def home_view(request):
     return render(request, 'home.html', {'role': role, 'can_access_compras': can_access_compras})
 
 # Vista para registro de usuario
-def register_view(request):
+def vista_registro(request):
     errors = []
     if request.method == 'POST':
         def is_valid_rut(rut):

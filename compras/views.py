@@ -44,7 +44,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 
 @admin_required
-def inventario_view(request):
+def vista_inventario(request):
     """
     Vista principal del panel de compras. Muestra estadísticas clave como
     el número de proveedores, compras, y el gasto total.
@@ -55,14 +55,14 @@ def inventario_view(request):
     from django.utils import timezone
     from datetime import timedelta
     
-    # Determine permissions
+    # Determinar permisos
     user = request.user
     role = None
     dept = None
     if hasattr(user, 'profile'):
         dept = user.profile.department
     
-    # Check for legacy roles
+    # Verificar roles antiguos
     try:
         empleado = getattr(user, 'empleado', None)
         if empleado:
@@ -77,7 +77,7 @@ def inventario_view(request):
         'can_view_proveedores': is_compras,
         'can_view_categorias': is_compras,
         'can_view_reportes': is_compras,
-        'can_view_ordenes': True, # Everyone allowed here can view orders
+        'can_view_ordenes': True, # Todos los permitidos aquí pueden ver órdenes
     }
 
     # Gasto semanal (ultimos 7 dias)
@@ -96,7 +96,7 @@ def inventario_view(request):
 # ... (skipping unchanged parts) ...
 
 @admin_required
-def api_get_insumos(request):
+def api_obtener_insumos(request):
     proveedor_id = request.GET.get('proveedor_id')
     categoria_id = request.GET.get('categoria_id')
     get_all = request.GET.get('all') == 'true'
@@ -126,7 +126,7 @@ def api_get_insumos(request):
     return JsonResponse({'insumos': data})
 
 @admin_required
-def proveedores_list(request):
+def lista_proveedores(request):
     """
     Muestra una lista de todos los proveedores. Permite buscar proveedores
     por nombre a través de un parámetro 'q' en la URL.
@@ -139,7 +139,7 @@ def proveedores_list(request):
     return render(request, 'compras/proveedores_list.html', context)
 
 @admin_required
-def proveedor_create(request):
+def crear_proveedor(request):
     """
     Gestiona la creación de un nuevo proveedor. Muestra un formulario vacío
     en una solicitud GET y procesa los datos del formulario en una solicitud POST.
@@ -149,16 +149,16 @@ def proveedor_create(request):
         if form.is_valid():
             proveedor = form.save()
             
+            # Procesar datos de insumos
             # Process insumos_data
-            # Process insumos_data
-            # Parse the data structure: insumos_data[0][categoria], insumos_data[0][nombre], etc.
+            # Analizar la estructura de datos: insumos_data[0][categoria], insumos_data[0][nombre], etc.
             insumos_dict = {}
             for key in request.POST:
                 if key.startswith('insumos_data['):
-                    # Extract index and field name
+                    # Extraer índice y nombre del campo
                     # key format: insumos_data[0][categoria]
                     try:
-                        # Remove 'insumos_data[' prefix (len 13) and last ']'
+                        # Eliminar prefijo 'insumos_data[' (len 13) y último ']'
                         content = key[13:-1] # 0][categoria
                         if '][' in content:
                             index, field = content.split('][')
@@ -169,10 +169,10 @@ def proveedor_create(request):
                     except ValueError:
                         continue
             
-            # Create Insumo objects
+            # Crear objetos Insumo
             for insumo_data in insumos_dict.values():
                 if 'categoria' in insumo_data and 'nombre' in insumo_data and 'unidad_medida' in insumo_data:
-                    # Check if insumo already exists
+                    # Verificar si el insumo ya existe
                     insumo, created = Insumo.objects.get_or_create(
                         nombre=insumo_data['nombre'],
                         categoria_id=insumo_data['categoria'],
@@ -183,7 +183,7 @@ def proveedor_create(request):
             messages.success(request, 'Proveedor creado exitosamente.')
             return redirect('compras:proveedores_list')
         else:
-            # Debug: print form errors
+            # Depuración: imprimir errores del formulario
             print("Form errors:", form.errors)
             print("Form data:", request.POST)
     else:
@@ -196,13 +196,13 @@ def proveedor_create(request):
 
 # Import export views
 from .export_views import (
-    export_compras_excel, export_compras_pdf,
-    export_ordenes_excel, export_ordenes_pdf,
-    export_proveedores_excel, export_proveedores_pdf
+    exportar_compras_excel, exportar_compras_pdf,
+    exportar_ordenes_excel, exportar_ordenes_pdf,
+    exportar_proveedores_excel, exportar_proveedores_pdf
 )
 
 @admin_required
-def compras_list(request):
+def lista_compras(request):
     """
     Muestra el listado de todas las compras registradas con búsqueda y paginación.
     """
@@ -225,14 +225,14 @@ def compras_list(request):
     return render(request, 'compras/compras_list.html', context)
 
 @admin_required
-def categorias_list(request):
+def lista_categorias(request):
     """Muestra una lista de todas las categorías de proveedores."""
     categorias = Categoria.objects.all()
     context = {'categorias': categorias}
     return render(request, 'compras/categorias_list.html', context)
 
 @admin_required
-def categoria_create(request):
+def crear_categoria(request):
     """
     Gestiona la creación de una nueva categoría. Muestra un formulario
     en blanco en GET y lo procesa en POST.
@@ -250,7 +250,7 @@ def categoria_create(request):
 
 
 @admin_required
-def categoria_edit(request, pk):
+def editar_categoria(request, pk):
     """
     Permite editar una categoría existente, identificada por su clave primaria (pk).
     """
@@ -266,7 +266,7 @@ def categoria_edit(request, pk):
     return render(request, 'compras/categoria_form.html', {'form': form, 'title': 'Editar Categoría'})
 
 @admin_required
-def categoria_delete(request, pk):
+def eliminar_categoria(request, pk):
     """
     Gestiona la eliminación de una categoría. Previene la eliminación si la
     categoría está asociada a algún proveedor para mantener la integridad de los datos.
@@ -287,7 +287,7 @@ def categoria_delete(request, pk):
 
 
 @admin_required
-def compra_create(request):
+def crear_compra(request):
     """
     Gestiona el registro de una nueva compra.
     """
@@ -304,7 +304,7 @@ def compra_create(request):
 
 
 @admin_required
-def compra_delete(request, pk):
+def eliminar_compra(request, pk):
     """
     Elimina una compra específica, identificada por su clave primaria.
     """
@@ -317,7 +317,7 @@ def compra_delete(request, pk):
 
 
 @admin_required
-def compra_edit(request, pk):
+def editar_compra(request, pk):
     """
     Permite editar los detalles de una compra existente.
     """
@@ -334,7 +334,7 @@ def compra_edit(request, pk):
 
 
 @admin_required
-def compra_detail(request, pk):
+def detalle_compra(request, pk):
     """
     Muestra los detalles completos de una compra específica.
     """
@@ -343,7 +343,7 @@ def compra_detail(request, pk):
 
 
 @admin_required
-def proveedor_delete(request, pk):
+def eliminar_proveedor(request, pk):
     """
     Gestiona la eliminación de un proveedor. Si el proveedor tiene compras
     asociadas, se previene la eliminación para proteger la integridad de los datos
@@ -371,7 +371,7 @@ def proveedor_delete(request, pk):
 
 
 @admin_required
-def proveedor_edit(request, pk):
+def editar_proveedor(request, pk):
     """
     Permite editar los datos de un proveedor existente.
     """
@@ -381,8 +381,8 @@ def proveedor_edit(request, pk):
         if form.is_valid():
             proveedor = form.save()
             
-            # Process insumos_data
-            proveedor.insumos.clear()  # Clear existing insumos
+            # Procesar datos de insumos
+            proveedor.insumos.clear()  # Limpiar insumos existentes
             
             insumos_dict = {}
             for key in request.POST:
@@ -419,7 +419,7 @@ def proveedor_edit(request, pk):
     else:
         form = ProveedorForm(instance=proveedor)
         
-    # Prepare existing insumos for JavaScript
+    # Preparar insumos existentes para JavaScript
     import json
     existing_insumos = []
     for insumo in proveedor.insumos.all():
@@ -448,39 +448,39 @@ class AdminLoginView(LoginView):
     template_name = 'registration/admin_login.html'
 
 @admin_required
-def orden_compra_list(request):
+def lista_ordenes_compra(request):
     query = request.GET.get('q', '')
     ordenes = OrdenCompra.objects.all().order_by('-fecha_emision')
     if query:
-        # Sanitize query for ID search: remove 'OC', 'oc', spaces, dashes
+        # Sanitizar consulta para búsqueda por ID: eliminar 'OC', 'oc', espacios, guiones
         import re
         search_id = re.sub(r'(?i)^oc[- ]?', '', query)
         
         filters = Q(id__icontains=search_id) if search_id.isdigit() else Q()
         
-        # If the query was NOT just an ID search (e.g. it has other chars), 
-        # or if we want to allow searching strictly by ID when it matches, 
-        # we might want to be careful. 
-        # But `id__icontains` with a digit string is safe.
-        
-        # If the stripped query is empty (e.g. user typed just "OC"), 
-        # search_id would be empty, and isdigit() false. Filters will be empty Q().
-        
-        # We can also keep searching other fields if we had them. 
-        # The original code ONLY searched ID: Q(id__icontains=query)
-        # So we just replace that logic.
+        # Si la consulta NO fue solo una búsqueda por ID (ej. tiene otros caracteres),
+        # o si queremos permitir buscar estrictamente por ID cuando coincide,
+        # debemos tener cuidado.
+        # Pero `id__icontains` con una cadena de dígitos es seguro.
+
+        # Si la consulta limpia está vacía (ej. usuario escribió solo "OC"),
+        # search_id estaría vacío, e isdigit() falso. Los filtros serán Q() vacío.
+
+        # También podemos seguir buscando otros campos si los tuviéramos.
+        # El código original SOLO buscaba ID: Q(id__icontains=query)
+        # Así que solo reemplazamos esa lógica.
         
         if search_id.isdigit():
              ordenes = ordenes.filter(Q(id=search_id) | Q(id__icontains=search_id))
         else:
-             # If it's not a digit after stripping, original behavior or empty result?
-             # Original behavior tried to find non-digits in an IntegerField which might error or return nothing.
-             # Django usually handles string-in-integer lookup by casting or erroring depending on DB.
-             # Safest is to do nothing if it's not a digit, OR try query as is (which will fail for ID).
+             # Si no es un dígito después de limpiar, ¿comportamiento original o resultado vacío?
+             # El comportamiento original intentaba encontrar no dígitos en un IntegerField lo que podría dar error o no devolver nada.
+             # Django usualmente maneja búsqueda de cadena en entero casteando o dando error dependiendo de la BD.
+             # Lo más seguro es no hacer nada si no es un dígito, O intentar la consulta tal cual (que fallará para ID).
              pass
-             # For now, let's stick to the plan: use the cleaned ID.
+             # Por ahora, mantengamos el plan: usar el ID limpio.
              
-        # Refined logic:
+        # Lógica refinada:
         if search_id.isdigit():
              ordenes = ordenes.filter(id__icontains=search_id)
     
@@ -494,7 +494,7 @@ def orden_compra_list(request):
     if hasattr(request.user, 'profile'):
         dept = request.user.profile.department
     
-    # Determine permissions
+    # Determinar permisos
     is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'empleado', None) and request.user.empleado.rol in ['administrador', 'jefe_compras']
     is_compras = dept == 'COMPRAS' or is_admin
     is_finanzas = dept == 'FINANZAS' or is_admin
@@ -517,14 +517,14 @@ from .decorators import department_required
 
 @admin_required
 @department_required('COMPRAS')
-def orden_compra_create(request):
+def crear_orden_compra(request):
     source_order_id = request.GET.get('source_order_id')
     initial_data = {}
     initial_formset = []
     
     if source_order_id:
         source_order = get_object_or_404(OrdenCompra, pk=source_order_id)
-        # initial_data = {'proveedor': source_order.proveedor} # Removed
+        # initial_data = {'proveedor': source_order.proveedor} # Eliminado
         for detalle in source_order.detalles.all():
             initial_formset.append({
                 'proveedor': detalle.proveedor,
@@ -546,7 +546,7 @@ def orden_compra_create(request):
                     
                     detalles = formset.save(commit=False)
                     
-                    # Validate that there is at least one detail
+                    # Validar que haya al menos un detalle
                     if not detalles:
                         messages.error(request, 'La orden debe tener al menos un detalle.')
                         return render(request, 'compras/orden_compra_form.html', {
@@ -562,7 +562,7 @@ def orden_compra_create(request):
                     
                     orden.update_totals()
                     
-                    # Notify Finanzas department
+                    # Notificar al departamento de Finanzas
                     from .notifications import notify_finance_new_order
                     notify_finance_new_order(orden)
                     
@@ -587,10 +587,10 @@ def orden_compra_create(request):
 
 @admin_required
 @department_required('COMPRAS')
-def orden_compra_edit(request, pk):
+def editar_orden_compra(request, pk):
     orden = get_object_or_404(OrdenCompra, pk=pk)
     
-    # Logic for "Anular"
+    # Lógica para "Anular"
     if request.method == 'POST' and 'anular' in request.POST:
         if orden.estado == 'EN_ESPERA':
             orden.estado = 'ANULADA'
@@ -598,14 +598,14 @@ def orden_compra_edit(request, pk):
             messages.success(request, 'Orden anulada correctamente.')
         return redirect('compras:orden_compra_detail', pk=orden.pk)
 
-    # Prevent editing if NOT EN_ESPERA (Approved/Rejected/Closed orders are immutable)
+    # Prevenir edición si NO está EN_ESPERA (Órdenes Aprobadas/Rechazadas/Cerradas son inmutables)
     if orden.estado != 'EN_ESPERA':
          messages.warning(request, 'Solo se pueden editar órdenes en estado "En Espera".')
          return redirect('compras:orden_compra_detail', pk=orden.pk)
 
-    # STRICT EDIT PERMISSION: Only Admins can edit
+    # PERMISO DE EDICIÓN ESTRICTO: Solo Admins pueden editar
     is_admin_strict = request.user.is_superuser or request.user.is_staff
-    # Also check legacy employee role if applicable
+    # También verificar rol de empleado antiguo si aplica
     if not is_admin_strict:
         try:
              if request.user.empleado.rol == 'administrador':
@@ -628,7 +628,7 @@ def orden_compra_edit(request, pk):
                     for detalle in detalles:
                         detalle.orden = orden
                         detalle.save()
-                    # Handle deletions
+                    # Manejar eliminaciones
                     for obj in formset.deleted_objects:
                         obj.delete()
                         
@@ -651,7 +651,7 @@ def orden_compra_edit(request, pk):
     })
 
 @admin_required
-def orden_compra_detail(request, pk):
+def detalle_orden_compra(request, pk):
     orden = get_object_or_404(OrdenCompra, pk=pk)
     
     if request.method == 'POST':
@@ -661,7 +661,7 @@ def orden_compra_detail(request, pk):
                 orden.save()
                 
                 if request.POST.get('clonar') == 'true':
-                    # Clone logic: Redirect to create with source_order_id to allow editing before saving
+                    # Lógica de clonación: Redirigir a crear con source_order_id para permitir editar antes de guardar
                     from django.urls import reverse
                     url = reverse('compras:orden_compra_create') + f'?source_order_id={orden.pk}'
                     messages.success(request, 'Orden anulada. Redirigiendo a nueva orden con datos precargados.')
@@ -670,7 +670,7 @@ def orden_compra_detail(request, pk):
                 messages.success(request, 'Orden anulada correctamente.')
                 return redirect('compras:orden_compra_detail', pk=orden.pk)
 
-    # Determine permissions
+    # Determinar permisos
     dept = None
     if hasattr(request.user, 'profile'):
         dept = request.user.profile.department
@@ -695,7 +695,7 @@ def orden_compra_detail(request, pk):
 
 @admin_required
 @department_required('COMPRAS')
-def orden_compra_anular(request, pk):
+def anular_orden_compra(request, pk):
     """
     Vista especifica para anular desde el listado.
     """
@@ -713,7 +713,7 @@ def orden_compra_anular(request, pk):
                     orden.save()
                     
                     if request.POST.get('clonar') == 'true':
-                        # Clone logic: Redirect to create with source_order_id
+                        # Lógica de clonación: Redirigir a crear con source_order_id
                         from django.urls import reverse
                         url = reverse('compras:orden_compra_create') + f'?source_order_id={orden.pk}'
                         messages.success(request, 'Orden anulada. Redirigiendo a nueva orden con datos precargados.')
@@ -733,7 +733,7 @@ def historial_anulaciones(request):
     ordenes_anuladas = OrdenCompra.objects.filter(estado='ANULADA').order_by('-fecha_anulacion')
     
     if query:
-        # Sanitize for ID scan
+        # Sanitizar para escaneo de ID
         import re
         search_id = re.sub(r'(?i)^oc[- ]?', '', query)
         
@@ -777,7 +777,7 @@ def historial_anulaciones(request):
     return render(request, 'compras/historial_anulaciones.html', context)
 
 @admin_required
-def orden_compra_cerrar(request, pk):
+def cerrar_orden_compra(request, pk):
     """
     Cierra una orden APROBADA y crea automáticamente un registro en Compra.
     Solo permitido para BODEGA.
@@ -839,7 +839,7 @@ def orden_compra_cerrar(request, pk):
     return redirect('compras:orden_compra_detail', pk=orden.pk)
 
 @admin_required
-def orden_compra_aprobar(request, pk):
+def aprobar_orden_compra(request, pk):
     """
     Aprueba una orden EN_ESPERA.
     Solo permitido para FINANZAS.
@@ -890,7 +890,7 @@ def orden_compra_aprobar(request, pk):
     return redirect('compras:orden_compra_detail', pk=orden.pk)
 
 @admin_required
-def orden_compra_rechazar(request, pk):
+def rechazar_orden_compra(request, pk):
     """
     Rechaza una orden EN_ESPERA.
     Solo permitido para FINANZAS.
@@ -925,7 +925,7 @@ def orden_compra_rechazar(request, pk):
     return redirect('compras:orden_compra_detail', pk=orden.pk)
 
 @admin_required
-def proveedor_evaluar(request, pk):
+def evaluar_proveedor(request, pk):
     proveedor = get_object_or_404(Proveedor, pk=pk)
     if request.method == 'POST':
         form = EvaluacionProveedorForm(request.POST)
@@ -939,7 +939,7 @@ def proveedor_evaluar(request, pk):
     return redirect('compras:proveedores_list')
 
 @admin_required
-def proveedor_historial_evaluaciones(request, pk):
+def historial_evaluaciones_proveedor(request, pk):
     proveedor = get_object_or_404(Proveedor, pk=pk)
     evaluaciones = proveedor.evaluaciones.all().order_by('-fecha')
     data = []
@@ -953,7 +953,7 @@ def proveedor_historial_evaluaciones(request, pk):
     return JsonResponse({'evaluaciones': data, 'proveedor': proveedor.nombre})
 
 @admin_required
-def api_get_insumos(request):
+def api_obtener_insumos(request):
     proveedor_id = request.GET.get('proveedor_id')
     categoria_id = request.GET.get('categoria_id')
     
@@ -980,7 +980,7 @@ def api_get_insumos(request):
         return JsonResponse({'error': 'Proveedor no encontrado'}, status=404)
 
 @admin_required
-def api_get_proveedores(request):
+def api_obtener_proveedores(request):
     categoria_id = request.GET.get('categoria_id')
     print(f"API Get Proveedores - Cat ID: {categoria_id}") # Debug log
     
@@ -1004,7 +1004,7 @@ def api_get_proveedores(request):
 from django.http import JsonResponse
 
 @login_required
-def notifications_list(request):
+def lista_notificaciones(request):
     """List user notifications"""
     notifications = request.user.notifications.all()[:20]
     return render(request, 'compras/notifications_list.html', {
@@ -1013,7 +1013,7 @@ def notifications_list(request):
 
 
 @login_required
-def notification_mark_read(request, pk):
+def marcar_notificacion_leida(request, pk):
     """Mark notification as read"""
     notification = get_object_or_404(Notification, pk=pk, user=request.user)
     notification.is_read = True
@@ -1022,7 +1022,7 @@ def notification_mark_read(request, pk):
 
 
 @login_required
-def notification_unread_count(request):
+def contar_notificaciones_no_leidas(request):
     """Get unread notification count"""
     count = request.user.notifications.filter(is_read=False).count()
     return JsonResponse({'count': count})

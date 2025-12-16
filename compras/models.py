@@ -10,6 +10,9 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
+    class Meta:
+        db_table = 'zwt_categoria'
+
 class Insumo(models.Model):
     nombre = models.CharField("Nombre del insumo", max_length=200)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name='insumos')
@@ -17,6 +20,9 @@ class Insumo(models.Model):
     
     def __str__(self):
         return f"{self.nombre} ({self.unidad_medida})"
+
+    class Meta:
+        db_table = 'zwt_insumo'
 
 
 class Proveedor(models.Model):
@@ -43,7 +49,7 @@ class Proveedor(models.Model):
     certificacion = models.FileField("Certificación (PDF)", upload_to='certificaciones/', blank=True, null=True, validators=[validate_pdf_file])
     insumos = models.ManyToManyField(Insumo, related_name='proveedores', blank=True, help_text="Insumos que ofrece este proveedor")
     
-    # Secondary contact fields
+    # Campos de contacto secundario
     agregar_contacto_secundario = models.BooleanField("¿Agregar contacto secundario?", default=False)
     contacto_secundario_nombre = models.CharField("Nombre contacto secundario", max_length=100, blank=True)
     contacto_secundario_apellido = models.CharField("Apellido contacto secundario", max_length=100, blank=True)
@@ -55,6 +61,9 @@ class Proveedor(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    class Meta:
+        db_table = 'zwt_proveedor'
 
 
 
@@ -73,6 +82,7 @@ class Compra(models.Model):
 
     class Meta:
         ordering = ['-fecha_compra']
+        db_table = 'zwt_compra'
 
     def __str__(self):
         prov_name = self.proveedor.nombre if self.proveedor else (self.nombre_proveedor or "(Proveedor eliminado)")
@@ -105,7 +115,7 @@ class OrdenCompra(models.Model):
         ('ANULADA', 'Anulada'),
     ]
 
-    # proveedor removed from OrdenCompra to allow multi-provider orders
+    # proveedor eliminado de OrdenCompra para permitir órdenes multiproveedor
     fecha_emision = models.DateField("Fecha de emisión", auto_now_add=True)
     neto = models.DecimalField("Neto", max_digits=12, decimal_places=0, default=0)
     iva = models.DecimalField("IVA (19%)", max_digits=12, decimal_places=0, default=0)
@@ -118,6 +128,9 @@ class OrdenCompra(models.Model):
     usuario_anulo = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordenes_anuladas')
     fecha_anulacion = models.DateTimeField("Fecha de anulación", null=True, blank=True)
     updated_at = models.DateTimeField("Última actualización", auto_now=True)
+
+    class Meta:
+        db_table = 'zwt_orden_compra'
 
     def __str__(self):
         return f"OC-{self.id}"
@@ -144,12 +157,15 @@ class DetalleOrden(models.Model):
     def save(self, *args, **kwargs):
         self.subtotal = self.cantidad * self.precio_unitario
         super().save(*args, **kwargs)
-        # Update total of the order
+        # Actualizar total de la orden
         self.orden.update_totals()
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
         self.orden.update_totals()
+
+    class Meta:
+        db_table = 'zwt_detalle_orden'
 
 class EvaluacionProveedor(models.Model):
     CALIDAD_CHOICES = [
@@ -166,10 +182,13 @@ class EvaluacionProveedor(models.Model):
     fecha = models.DateField("Fecha", auto_now_add=True)
     descripcion = models.TextField("Descripción breve", max_length=200)
 
+    class Meta:
+        db_table = 'zwt_evaluacion_proveedor'
+
     def __str__(self):
         return f"Evaluación de {self.proveedor.nombre} - {self.get_calidad_display()}"
 
-# Notification System Models
+# Modelos del Sistema de Notificaciones
 
 DEPARTMENT_CHOICES = [
     ('COMPRAS', 'Compras'),
@@ -179,7 +198,7 @@ DEPARTMENT_CHOICES = [
 ]
 
 class UserProfile(models.Model):
-    """User profile to store department information"""
+    """Perfil de usuario para almacenar información del departamento"""
     from django.contrib.auth.models import User
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -191,10 +210,11 @@ class UserProfile(models.Model):
     class Meta:
         verbose_name = "Perfil de Usuario"
         verbose_name_plural = "Perfiles de Usuario"
+        db_table = 'zwt_user_profile'
 
 
 class Notification(models.Model):
-    """In-app notifications for order status changes"""
+    """Notificaciones en la aplicación para cambios de estado de órdenes"""
     from django.contrib.auth.models import User
     
     NOTIFICATION_TYPES = [
@@ -215,6 +235,7 @@ class Notification(models.Model):
         ordering = ['-created_at']
         verbose_name = "Notificación"
         verbose_name_plural = "Notificaciones"
+        db_table = 'zwt_notification'
     
     def __str__(self):
         return f"{self.get_notification_type_display()} - {self.user.username}"
